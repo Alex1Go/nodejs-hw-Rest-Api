@@ -1,13 +1,13 @@
-const fs = require("fs/promises");
+const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
 const contactsPath = path.join(__dirname, "./contacts.json");
 
-async function listContacts() {
+const listContacts = async () => {
   const data = await fs.readFile(contactsPath, "utf-8");
   return JSON.parse(data);
-}
+};
 
 async function writeContacts(contacts) {
   return await fs.writeFile(
@@ -16,7 +16,7 @@ async function writeContacts(contacts) {
   );
 }
 
-async function getContactById(contactId) {
+const getContactById = async (contactId) => {
   if (!contactId) {
     return null;
   }
@@ -24,9 +24,9 @@ async function getContactById(contactId) {
   const contact = contacts.find((contact) => contact.id === contactId);
 
   return contact;
-}
+};
 
-async function removeContact(contactId) {
+const removeContact = async (contactId) => {
   const contacts = await listContacts();
   const index = contacts.findIndex((contact) => contact.id === contactId);
   if (index === -1) {
@@ -35,9 +35,9 @@ async function removeContact(contactId) {
   const removeContact = contacts.splice(index, 1)[0];
   await writeContacts(contacts);
   return removeContact;
-}
+};
 
-async function addContact(name, email, phone) {
+const addContact = async (name, email, phone) => {
   const contacts = await listContacts();
   const newContact = { id: crypto.randomUUID(), name, email, phone };
   contacts.push(newContact);
@@ -45,9 +45,9 @@ async function addContact(name, email, phone) {
   await writeContacts(contacts);
 
   return newContact;
-}
+};
 
-async function updateContact(contactId, body) {
+const updateContact = async (contactId, body) => {
   const contacts = await listContacts();
   const index = contacts.findIndex((contact) => contact.id === contactId);
   if (index === -1) {
@@ -56,7 +56,7 @@ async function updateContact(contactId, body) {
   contacts[index] = { contactId, ...body };
   await writeContacts(contacts);
   return contacts[index];
-}
+};
 
 module.exports = {
   listContacts,
