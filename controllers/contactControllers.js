@@ -23,28 +23,29 @@ async function getOneContact(req, res, next) {
 }
 
 async function newOneContact(req, res, next) {
+  const contact = {
+    name: req.body.name,
+    email: req.body.email,
+    phone: req.body.phone,
+    favorite: req.body.favorite,
+  };
+
   try {
     const { error } = schema.validate(req.body);
     if (error) {
       return res.status(400).json({ message: "missing required name field" });
-    } else {
-      const contact = {
-        name: req.body.name,
-        email: req.body.email,
-        phone: req.body.phone,
-        favorite: req.body.favorite,
-      };
-      const result = await Contact.create(contact);
-      res.status(201).json(result);
     }
+    const result = await Contact.create(contact);
+    res.status(201).json(result);
   } catch (error) {
     next(error);
   }
 }
 
 async function deleteContact(req, res, next) {
+  const { contactId } = req.params;
   try {
-    const result = await Contact.findByIdAndDelete(req.params);
+    const result = await Contact.findByIdAndDelete(contactId);
     if (result) {
       res.status(200).json({ message: "contact deleted" });
     } else {
