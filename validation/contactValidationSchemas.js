@@ -7,6 +7,7 @@ const schema = Joi.object({
     tlds: { allow: ["com", "net"] },
   }),
   phone: Joi.string().required(),
+  favorite: Joi.boolean(),
 });
 
 module.exports = { schema };
