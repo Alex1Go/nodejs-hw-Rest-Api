@@ -12,11 +12,10 @@ async function getAllContacts(req, res, next) {
 async function getOneContact(req, res, next) {
   try {
     const contact = await Contact.findById(req.params.contactId).exec();
-    if (contact) {
-      res.status(200).json(contact);
-    } else {
-      res.status(404).json({ message: "Not found" });
+    if (!contact) {
+      return res.status(404).json({ message: "Not found" });
     }
+    res.status(200).json(contact);
   } catch (err) {
     next(err);
   }
