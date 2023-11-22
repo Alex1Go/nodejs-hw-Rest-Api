@@ -1,5 +1,6 @@
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { userSchema } = require("../validation/userValidationSchema");
 
 async function register(req, res, next) {
@@ -43,8 +44,13 @@ async function login(req, res, next) {
     if (isMatch === false) {
       return res.status(401).json({ message: "Email or password is wrong" });
     }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "4h",
+    });
+    await User.findByIdAndUpdate(user._id, { token }).exec();
+
     res.status(200).json({
-      token: "exampletoken",
+      token,
       user: {
         email: user.email,
         subscription: user.subscription,
@@ -55,6 +61,32 @@ async function login(req, res, next) {
   }
 }
 
-async function logout(req, res, next) {}
-async function current(req, res, next) {}
+async function logout(req, res, next) {
+  try {
+    const user = await User.findByIdAndUpdate(req.user.id, {
+      token: null,
+    }).exec();
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function current(req, res, next) {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    return res.status(200).json({
+      email: user.email,
+      subscription: user.subscription,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 module.exports = { register, login, logout, current };
