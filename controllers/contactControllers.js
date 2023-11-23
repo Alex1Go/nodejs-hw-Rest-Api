@@ -3,7 +3,7 @@ const { schema } = require("../validation/contactValidationSchemas");
 
 async function getAllContacts(req, res, next) {
   try {
-    const contacts = await Contact.find().exec();
+    const contacts = await Contact.find({ owner: req.user.id }).exec();
     res.status(200).json(contacts);
   } catch (err) {
     next(err);
@@ -15,6 +15,7 @@ async function getOneContact(req, res, next) {
     if (!contact) {
       return res.status(404).json({ message: "Not found" });
     }
+
     res.status(200).json(contact);
   } catch (err) {
     next(err);
@@ -27,6 +28,7 @@ async function newOneContact(req, res, next) {
     email: req.body.email,
     phone: req.body.phone,
     favorite: req.body.favorite,
+    owner: req.user.id,
   };
 
   try {
