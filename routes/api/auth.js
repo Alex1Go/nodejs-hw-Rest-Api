@@ -7,6 +7,6 @@ const auth = require("../../middleware/midauth");
 router.post("/register", jsonParser, register);
 router.post("/login", jsonParser, login);
 router.post("/logout", auth, logout);
-router.get("/current", jsonParser, current);
+router.get("/current", auth, current);
 
 module.exports = router;
