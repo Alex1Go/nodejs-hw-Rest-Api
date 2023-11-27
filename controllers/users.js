@@ -1,6 +1,7 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const User = require("../models/users");
+const Jimp = require("jimp");
 
 async function uploadAvatar(req, res, next) {
   try {
@@ -8,17 +9,21 @@ async function uploadAvatar(req, res, next) {
       req.file.path,
       path.join(__dirname, "..", "public/avatars", req.file.filename)
     );
+
+    const image = await Jimp.read(req.file.path);
+    image.resize(250, 250);
+
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { avatar: req.file.filename },
+      { avatarURL: req.file.filename },
       { new: true }
     ).exec();
 
-    if (user === null) {
-      return res.status(404).send({ message: "User not found" });
+    if (!user) {
+      return res.status(401).json({ message: "Not authorized" });
     }
     res.status(200).json({
-      avatarURL,
+      avatarURL: user.avatarURL,
     });
   } catch (error) {
     next(error);

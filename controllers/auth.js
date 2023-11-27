@@ -1,6 +1,7 @@
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const gravatar = require("gravatar");
 const { userSchema } = require("../validation/userValidationSchema");
 
 async function register(req, res, next) {
@@ -16,8 +17,13 @@ async function register(req, res, next) {
       return res.status(400).json({ message: error.message });
     }
     const passwordHash = await bcrypt.hash(password, 10);
+    const avatarURL = gravatar.url(email);
 
-    const newUser = await User.create({ email, password: passwordHash });
+    const newUser = await User.create({
+      email,
+      password: passwordHash,
+      avatarURL,
+    });
     res.status(201).json({
       user: {
         email: newUser.email,
