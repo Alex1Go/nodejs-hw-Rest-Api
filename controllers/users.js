@@ -29,4 +29,5 @@ async function uploadAvatar(req, res, next) {
     next(error);
   }
 }
+
 module.exports = { uploadAvatar };
