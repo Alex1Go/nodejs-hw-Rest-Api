@@ -5,6 +5,7 @@ const {
   logout,
   current,
   verify,
+  resendVerifyEmail,
 } = require("../../controllers/auth");
 const router = express.Router();
 const jsonParser = express.json();
@@ -15,5 +16,6 @@ router.post("/login", jsonParser, login);
 router.post("/logout", auth, logout);
 router.get("/current", auth, current);
 router.get("/verify/:verificationToken", verify);
+router.post("/verify", resendVerifyEmail);
 
 module.exports = router;

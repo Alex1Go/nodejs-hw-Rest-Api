@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const gravatar = require("gravatar");
 const { userSchema } = require("../validation/userValidationSchema");
+const { emailSchema } = require("../validation/emailValidationSchema");
 const { sendEmail } = require("../helpers/sendEmail");
 
 async function register(req, res, next) {
@@ -126,5 +127,37 @@ async function verify(req, res, next) {
     next(error);
   }
 }
+async function resendVerifyEmail(req, res, next) {
+  const { email } = req.body;
+  try {
+    const { error } = emailSchema.validate(req.body);
+    if (error) {
+      return res.status(400).send({ message: "missing required field email" });
+    }
+    const user = await User.findOne({ email }).exec();
 
-module.exports = { register, login, logout, current, verify };
+    if (user.verify) {
+      return res
+        .status(400)
+        .send({ message: "Verification has already been passed" });
+    }
+    await sendEmail({
+      to: email,
+      subject: "Welcome to Contacts book",
+      html: `To confirm your registration, please click on <a href="http://localhost:3000/users/verify/${user.verificationToken}">link</a>`,
+      text: `To confirm your registration, please open the link  http://localhost:3000/users/verify/${user.verificationToken}`,
+    });
+    return res.status(200).json({ message: "Verification email sent" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  register,
+  login,
+  logout,
+  current,
+  verify,
+  resendVerifyEmail,
+};
