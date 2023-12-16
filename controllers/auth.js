@@ -1,8 +1,11 @@
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const gravatar = require("gravatar");
 const { userSchema } = require("../validation/userValidationSchema");
+const { emailSchema } = require("../validation/emailValidationSchema");
+const { sendEmail } = require("../helpers/sendEmail");
 
 async function register(req, res, next) {
   const { email, password } = req.body;
@@ -19,8 +22,16 @@ async function register(req, res, next) {
     const passwordHash = await bcrypt.hash(password, 10);
     const avatarURL = gravatar.url(email);
 
+    const verificationToken = crypto.randomUUID();
+    await sendEmail({
+      to: email,
+      subject: "Welcome to Contacts book",
+      html: `To confirm your registration, please click on <a href="http://localhost:3000/users/verify/${verificationToken}">link</a>`,
+      text: `To confirm your registration, please open the link  http://localhost:3000/users/verify/${verificationToken}`,
+    });
     const newUser = await User.create({
       email,
+      verificationToken,
       password: passwordHash,
       avatarURL,
     });
@@ -49,6 +60,9 @@ async function login(req, res, next) {
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch === false) {
       return res.status(401).json({ message: "Email or password is wrong" });
+    }
+    if (user.verify !== true) {
+      return res.status(401).send({ message: "Your account is not verified" });
     }
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "4h",
@@ -95,4 +109,55 @@ async function current(req, res, next) {
     next(error);
   }
 }
-module.exports = { register, login, logout, current };
+
+async function verify(req, res, next) {
+  const { verificationToken } = req.params;
+  try {
+    const user = await User.findOne({ verificationToken }).exec();
+
+    if (!user) {
+      return res.status(404).send({ message: "User not found" });
+    }
+    await User.findByIdAndUpdate(user._id, {
+      verify: true,
+      verificationToken: null,
+    });
+    return res.status(200).json({ message: "Verification successful" });
+  } catch (error) {
+    next(error);
+  }
+}
+async function resendVerifyEmail(req, res, next) {
+  const { email } = req.body;
+  try {
+    const { error } = emailSchema.validate(req.body);
+    if (error) {
+      return res.status(400).send({ message: "missing required field email" });
+    }
+    const user = await User.findOne({ email }).exec();
+
+    if (user.verify) {
+      return res
+        .status(400)
+        .send({ message: "Verification has already been passed" });
+    }
+    await sendEmail({
+      to: email,
+      subject: "Welcome to Contacts book",
+      html: `To confirm your registration, please click on <a href="http://localhost:3000/users/verify/${user.verificationToken}">link</a>`,
+      text: `To confirm your registration, please open the link  http://localhost:3000/users/verify/${user.verificationToken}`,
+    });
+    return res.status(200).json({ message: "Verification email sent" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  register,
+  login,
+  logout,
+  current,
+  verify,
+  resendVerifyEmail,
+};
